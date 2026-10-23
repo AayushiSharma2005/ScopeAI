@@ -1,53 +1,119 @@
-# ScopeAI: Project Scoping and Proposal Generator
+# ScopeAI
 
-A full-stack web application that converts a plain-English product idea into a structured project proposal (scope, technology stack, team, timeline, cost range, risks), lets the visitor capture themselves as a lead, and gives the sales team a password-protected dashboard to track leads.
+Live Demo: https://scope-ai.vercel.app  
+GitHub: https://github.com/AayushiSharma2005/ScopeAI
 
-## Features
-- Idea intake form with platform, budget, timeline and Web3 options, plus one-click example ideas
-- AI-generated proposal as **validated structured JSON** (Zod), with one automatic retry on invalid output
-- Shareable proposal page (`/proposal/<id>`) and **PDF download** (print stylesheet)
-- Lead capture saved to MongoDB against the proposal
-- Admin dashboard (`/admin`) with summary counts, lead table and status workflow (New / Contacted / Won / Lost)
-- Per-IP rate limiting on AI, lead and login endpoints
-- **Demo mode**: runs without an AI key using built-in templates, so the app always works
+ScopeAI is a full-stack web application that takes a plain-English software idea and turns it into a structured technical proposal. It breaks down features into MVP vs Phase 2 modules, recommends an appropriate tech stack with rationales, estimates team sizing and timelines, and provides cost ranges.
 
-## Tech stack
-Next.js 14 (App Router, API routes), TypeScript, Tailwind CSS, MongoDB (native driver), Zod, Anthropic or OpenAI API.
+Visitors can review their generated proposal, download it as a PDF, or submit their contact details to request a consultation. An authenticated admin dashboard allows the team to track leads, filter by deal status, search, and export data to CSV.
 
-## Architecture
+---
+
+## What It Does
+
+1. **Scoping Studio**: Users enter their product idea, target platform (Web, Mobile, Cross-Platform), budget band, and target timeline, with optional Web3 settings.
+2. **AI Proposal Generation**: The app sends the requirements to Claude (Anthropic API) and forces the output into a strict JSON schema using Zod. If the output fails validation, it automatically retries once to self-correct.
+3. **Smart Fallback Mode**: If no AI API key is configured, the app uses a built-in domain template engine so that the entire proposal flow still works without errors.
+4. **Resilient Database Layer**: Connects to MongoDB Atlas to store proposals and consultation leads. If MongoDB is offline or unconfigured, it automatically falls back to an in-memory store so the app never throws 500 errors.
+5. **PDF Export & Share**: Proposals can be downloaded as a clean PDF using custom print styles without heavy external PDF libraries.
+6. **Admin CRM Pipeline**: A password-protected dashboard (`/admin`) to manage incoming leads, update statuses (New, Contacted, Won, Lost), search across leads, filter by status, and export everything to CSV.
+
+---
+
+## Tech Stack
+
+* **Framework**: Next.js 14 (App Router, Server Components, API Route Handlers)
+* **Language**: TypeScript
+* **Styling**: Tailwind CSS
+* **Database**: MongoDB (native driver with in-memory fallback)
+* **Validation**: Zod (runtime schema validation)
+* **AI Provider**: Anthropic Claude API (with template fallback)
+* **Authentication**: Stateless cookie sessions signed with HMAC-SHA256
+
+---
+
+## Project Structure
+
+```text
+scopeai/
+├── src/
+│   ├── app/
+│   │   ├── page.tsx               # Homepage and scoping studio
+│   │   ├── layout.tsx             # Root layout, header, footer, metadata
+│   │   ├── globals.css            # Tailwind directives and print styles
+│   │   ├── proposal/[id]/page.tsx # Proposal dossier view & lead form
+│   │   ├── admin/
+│   │   │   ├── page.tsx           # Admin CRM dashboard
+│   │   │   └── login/page.tsx     # Admin login screen
+│   │   └── api/
+│   │       ├── proposals/route.ts          # Proposal generation endpoint
+│   │       ├── proposals/[id]/lead/route.ts# Lead capture endpoint
+│   │       └── admin/                      # Auth and lead status endpoints
+│   ├── components/
+│   │   ├── IdeaForm.tsx           # Scoping form with benchmarks
+│   │   ├── ProposalView.tsx       # Executive proposal presentation
+│   │   ├── LeadForm.tsx           # Consultation booking component
+│   │   ├── AdminLeadsTable.tsx    # CRM table with search, filter, CSV
+│   │   ├── PrintButton.tsx        # PDF print and share action bar
+│   │   └── StatusSelect.tsx       # Asynchronous status update pill
+│   └── lib/
+│       ├── ai.ts                  # Anthropic / OpenAI integration with retries
+│       ├── db.ts                  # MongoDB client + in-memory store fallback
+│       ├── schema.ts              # Zod schemas for input, output, leads
+│       ├── mock.ts                # Deterministic domain template engine
+│       ├── auth.ts                # HMAC session creation and verification
+│       ├── ratelimit.ts           # IP-based rate limiter
+│       └── format.ts              # Currency and date formatting helpers
+└── tailwind.config.ts
 ```
-Browser -> Next.js pages (server components) ---> MongoDB (proposals collection)
-        -> /api/proposals            -> lib/ai.ts -> Anthropic / OpenAI (or demo templates)
-        -> /api/proposals/:id/lead   -> MongoDB
-        -> /api/admin/*              -> signed-cookie session -> MongoDB
-```
-Each proposal is one document: `{ input, proposal, source, lead?, status, createdAt }`. A lead is a proposal that has a `lead` field.
 
-## Run locally
-```bash
-npm install
-cp .env.example .env.local     # then fill in values
-npm run dev                    # http://localhost:3000
-```
-Required: `MONGODB_URI`, `ADMIN_PASSWORD`, `ADMIN_SESSION_SECRET`. Optional: `ANTHROPIC_API_KEY` (or `OPENAI_API_KEY` with `AI_PROVIDER=openai`). Without a key the app runs in demo mode.
+---
 
-A free MongoDB Atlas cluster works. In Atlas, create a database user and allow network access from `0.0.0.0/0` (needed for Vercel).
+## Running Locally
 
-## Deploy to Vercel
-1. Push this folder to a GitHub repository.
-2. Import the repository in Vercel (framework: Next.js, no build changes).
-3. Add the environment variables from `.env.example` under Project Settings, Environment Variables.
-4. Deploy. Open `/admin` and sign in with `ADMIN_PASSWORD`.
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/AayushiSharma2005/ScopeAI.git
+   cd ScopeAI
+   ```
 
-## Design decisions
-- **Structured output with validation**: the model must return JSON matching a Zod schema; invalid output triggers one corrective retry, so the page never renders malformed data.
-- **Prompt-injection hygiene**: the client's idea is delimited and the model is told to treat it as data.
-- **Demo fallback**: reviewers can run the full flow without any API key.
-- **Stateless sessions**: the admin cookie is an HMAC-signed expiry timestamp; no session store needed.
-- **PDF via print stylesheet**: zero dependencies and reliable on serverless.
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-## Known limitations and next steps
-- Rate limiting is in memory (per instance); move to Redis or MongoDB for multi-instance production.
-- Single shared admin password; replace with per-user auth (e.g. Auth.js) for a team.
-- Add email notifications to sales on new leads, and CSV export of leads.
-- Cost figures are indicative model estimates, not quotations.
+3. Set up environment variables:
+   Copy `.env.example` to `.env.local` and configure your keys:
+   ```bash
+   cp .env.example .env.local
+   ```
+   *(The app works out-of-the-box in demo mode even if MongoDB or Anthropic keys are left blank).*
+
+4. Start the development server:
+   ```bash
+   npm run dev
+   ```
+   Open `http://localhost:3000` in your browser.
+
+---
+
+## Environment Variables
+
+| Variable | Description | Default / Required |
+| :--- | :--- | :--- |
+| `MONGODB_URI` | MongoDB Atlas connection string | Optional (falls back to in-memory) |
+| `MONGODB_DB` | Database name | `scopeai` |
+| `ADMIN_PASSWORD` | Password for `/admin` access | Required for admin login |
+| `ADMIN_SESSION_SECRET` | Secret key for signing HMAC cookies | Required for sessions |
+| `AI_PROVIDER` | `anthropic`, `openai`, or `demo` | `demo` |
+| `ANTHROPIC_API_KEY` | Anthropic API key | Optional (uses templates if blank) |
+| `NEXT_PUBLIC_COMPANY_NAME` | Business name shown in UI | Optional |
+| `NEXT_PUBLIC_CONTACT_EMAIL` | Contact email shown in UI | Optional |
+
+---
+
+## Author
+
+Developed by **Aayushi Sharma**  
+* GitHub: [AayushiSharma2005](https://github.com/AayushiSharma2005)  
+* LinkedIn: [aayushi-sharma-4720302a0](https://www.linkedin.com/in/aayushi-sharma-4720302a0)
