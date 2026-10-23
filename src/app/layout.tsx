@@ -3,8 +3,14 @@ import Link from "next/link";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "ScopeAI | Project Scoping and Proposal Generator",
-  description: "Describe your product idea and receive a structured proposal covering scope, technology, team, timeline and estimated cost.",
+  title: "ScopeAI — Enterprise Project Scoping & Proposal Architecture",
+  description:
+    "Transform product concepts into executive technical blueprints, MVP vs Phase 2 module breakdowns, verified technology stacks, team sizing, and probabilistic cost models in seconds.",
+  openGraph: {
+    title: "ScopeAI — Automated Software Architecture & Proposal Engine",
+    description: "Generate structured, board-ready technical proposals, roadmaps, and investment estimates in seconds.",
+    type: "website",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
