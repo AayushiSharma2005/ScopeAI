@@ -1,6 +1,6 @@
 # ScopeAI
 
-Live Demo: https://scope-ai.vercel.app  
+Live Demo: https://scope-ai-lilac.vercel.app  
 GitHub: https://github.com/AayushiSharma2005/ScopeAI
 
 ScopeAI is a full-stack web application that takes a plain-English software idea and turns it into a structured technical proposal. It breaks down features into MVP vs Phase 2 modules, recommends an appropriate tech stack with rationales, estimates team sizing and timelines, and provides cost ranges.
